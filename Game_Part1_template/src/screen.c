@@ -44,8 +44,18 @@ void puts(char *word){
 void clear_screen(){
     set_cursor(0,0);
     set_color(0,0);
-    for(int i=0;i<30;i++){
+    for(int i=0;i<25;i++){
         for(int j=0;j<80;j++){
+            set_cursor(i,j);
+            put_char(' ');
+        }
+    }
+    for(int i=25;i<30;i++){
+        for(int j=0;j<80;j++){
+            set_color(14,0);
+            if(j>=29 && j<=49 && i>=26 && i<=28){
+                set_color(0,0);
+            }
             set_cursor(i,j);
             put_char(' ');
         }
@@ -164,8 +174,8 @@ int divr(int num1, int num2)
 
 uint8_t get_rand(){
     uint8_t rnumber = *MS_COUNTER_REG_ADDR;
-    rnumber = rnumber << 4;
-    rnumber = rnumber >> 4;
+    rnumber = rnumber << 6;
+    rnumber = rnumber >> 6;
     return rnumber;
 }
 
