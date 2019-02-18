@@ -25,6 +25,7 @@ typedef struct enemy{
     uint8_t pos_x;
     uint8_t pos_y;
     uint8_t color_fg;
+    uint8_t type;
     int fpart,spart;
 }enemy;
 
@@ -32,7 +33,7 @@ void detonate_bomb();
 void create_bullet();
 
 struct enemy enemies[10];
-enemy enemy1,enemy2,enemy3;
+struct enemy enemy1,enemy2,enemy3;
 
 spaceship spaceship_1;
 bullet space_ship_bullet;
@@ -40,7 +41,7 @@ bool isShooting = false,dir=true;
 
 uint8_t points;
 uint8_t movement_count;
-uint8_t lifes, bombs;
+uint8_t lifes, bombs,enemy_count;
 
 void initCharacters(){
     
@@ -48,6 +49,7 @@ void initCharacters(){
     points = 0;
     lifes = 3;
     bombs = 3;
+    enemy_count = 3;
 
     //space_ship
     spaceship_1.pos_x = 5;
@@ -63,18 +65,21 @@ void initCharacters(){
     enemy1.color_fg=10;
     enemy1.fpart=9;
     enemy1.spart=10;
+    enemy1.type = 1;
 
     enemy2.pos_x=30;
     enemy2.pos_y = 20;
     enemy2.color_fg = 14;
     enemy2.fpart = 11;
     enemy2.spart = 12;
+    enemy2.type = 2;
 
     enemy3.pos_x = 75;
     enemy3.pos_y = 13;
     enemy3.color_fg = 4;
     enemy3.fpart = 13;
     enemy3.spart = 14;
+    enemy3.type = 3;
 
 
     enemies[0] = enemy1;
@@ -87,40 +92,40 @@ void spaceship_movement(uint8_t key){
     switch (key)
     {
         case 1:{
-            spaceship_1.pos_x--;
-            if(spaceship_1.pos_x<=0){
-                spaceship_1.pos_x = 0;
+            // spaceship_1.pos_x-=2;
+            if(spaceship_1.pos_x>=2){
+                spaceship_1.pos_x -=2;
             }
             break;
         }
         case 2:{
-            spaceship_1.pos_x++;
+            spaceship_1.pos_x+=2;
             if(spaceship_1.pos_x>75){
                 spaceship_1.pos_x = 75;
             }
             break;
         }
-        case 4:{
+        case 3:{
             spaceship_1.pos_y++;
             if(spaceship_1.pos_y>=24){
                 spaceship_1.pos_y = 24;
             }
             break;
         }
-        case 8:{
-            spaceship_1.pos_y--;
-            if(spaceship_1.pos_y<0){
-                spaceship_1.pos_y++;
+        case 4:{
+            // spaceship_1.pos_y--;
+            if(spaceship_1.pos_y>1){
+                spaceship_1.pos_y--;
             }
             break;
         }
-        case 16:{
+        case 5:{
             if(bombs>0){
                 detonate_bomb();
             }
             break;
         }
-        case 128:{
+        case 8:{
             create_bullet(spaceship_1);
             break;
         }
@@ -134,25 +139,66 @@ void spaceship_movement(uint8_t key){
 
 void enemy_movement(){
     for (int i=0;i<10;i++){
-        if(dir){
-            enemies[i].pos_x += get_rand();
-            if(enemies[i].pos_x >= 78){
-                enemies[i].pos_x = 78;
-            }
-            enemies[i].pos_y += get_rand();
-            if(enemies[i].pos_y >=24){
-                enemies[i].pos_y = 24;
-            }
-        }else{
-            enemies[i].pos_x -= get_rand();
-            if(enemies[i].pos_x <= 0){
-                enemies[i].pos_x = 0;
-            }
-            enemies[i].pos_y -= get_rand();
-            if(enemies[i].pos_y <= 0){
-                enemies[i].pos_y = 0;
+        if(enemies[i].pos_x==80 && enemies[i].pos_y ==30){
+            continue;
+        }
+        int rand_numb = get_rand();
+        // switch(enemies[i].type){
+            // case 1:{
+        if(enemies[i].type==1){
+            if(dir){
+                enemies[i].pos_x-=get_rand();
+                enemies[i].pos_y+=get_rand();    
+            }else{
+                enemies[i].pos_x+=get_rand();
+                enemies[i].pos_y-=get_rand();
             }
         }
+        if(enemies[i].type==2){
+            if(!dir){
+                enemies[i].pos_x-=get_rand();        
+            }else{
+                enemies[i].pos_x+=get_rand();
+            }
+            enemies[i].pos_y+=MS_COUNTER_REG_ADDR[0];
+        }
+        if(enemies[i].type==3){
+            if(enemies[i].pos_x>spaceship_1.pos_x){
+                enemies[i].pos_x-=5;
+            }else{
+                enemies[i].pos_x+=5;
+            }
+            if(enemies[i].pos_y>spaceship_1.pos_y){
+                enemies[i].pos_y-=2;
+            }else{
+                enemies[i].pos_y+=2;
+            }
+        }
+        if(enemies[i].pos_x > 78){
+            enemies[i].pos_x = 78;
+        }
+        if(enemies[i].pos_y >= 24){
+            enemies[i].pos_y = 24;
+        }
+
+        
+        // if(dir){
+        //     enemies[i].pos_x += get_rand();
+        //     
+        //     enemies[i].pos_y += get_rand();
+        //     if(enemies[i].pos_y >=24){
+        //         enemies[i].pos_y = 24;
+        //     }
+        // }else{
+        //     enemies[i].pos_x -= get_rand();
+        //     if(enemies[i].pos_x <= 0){
+        //         enemies[i].pos_x = 0;
+        //     }
+        //     enemies[i].pos_y -= get_rand();
+        //     if(enemies[i].pos_y <= 0){
+        //         enemies[i].pos_y = 0;
+        //     }
+        // }
     }
     dir=!dir;  
 }
@@ -171,12 +217,10 @@ void check_collisions(){
         uint8_t e_line = enemies[i].pos_y;
         if(e_line == bullet_line){
             if(bullet_tail <= enemies[i].pos_x && enemies[i].pos_x <= bullet_head){
-                set_cursor(0,0);
-                put_char('5');
-                for(int j=i;j<9;j++){
-                    enemies[j] = enemies[j+1];
-                }
-                points++;
+                enemies[i].pos_x = 80;
+                enemies[i].pos_y = 30;
+                enemy_count--;
+                points+=150;
             }
         }
     }
@@ -201,11 +245,11 @@ void detonate_bomb(){
        uint8_t e_pox = enemies[i].pos_x;
        uint8_t e_poy = enemies[i].pos_y;
         if(e_pox >= 0 && e_pox < 80 && 
-           e_poy >= 0 && e_poy <= 25){
-            for(int j=i;j<9;j++){
-                enemies[j] = enemies[j+1];
-            }
-            points++;
+           e_poy >= 0 && e_poy <= 26){
+            enemies[i].pos_x = 80;
+            enemies[i].pos_y = 30;
+            points+=150;
+            enemy_count--;
         }
     }
     set_cursor(0,0);
@@ -220,9 +264,27 @@ void detonate_bomb(){
 }
 
 void picture_points(){
-    set_cursor(27,39);
+    uint8_t col = 40;
     set_color(0,15);
-    put_char(points);
+    int y = divq(points,10);
+    int x = divr(points,10);
+    while(y>10){
+        set_cursor(26,col);
+        put_char(x+48);
+        x = divr(y,10);
+        y = divq(y,10);
+        col--;
+    }
+    if(x!=0){
+        set_cursor(26,col);
+        put_char(x+48);
+        col--;
+        if(y!=0){
+            set_cursor(26,col);
+            put_char(y+48);
+        }
+    }
+    
 }
 
 void picture_lifes_gui(){
@@ -239,6 +301,9 @@ void picture_lifes_gui(){
 }
 
 void picture_enemy(enemy e){
+    if(e.pos_x==80 && e.pos_y==30){
+        return;
+    }
     set_color(0,e.color_fg);
     set_cursor(e.pos_y,e.pos_x);
     put_char(e.fpart);
@@ -285,17 +350,34 @@ void picture_bombs(){
     }
 }
 
+void printEndMessage(){
+    
+    if(lifes ==0){
+        puts("END GAME, YOU LOOSE");
+    }else{
+        puts("END GAME, YOU WON");
+    }
+}
+
 void render(){
-    clear_screen();
-    picture_spaceshipt();
-    for(int i=0;i<10;i++){
-        picture_enemy(enemies[i]);
+    if(lifes == 0 || enemy_count == 0){
+        clear_screen_endgame();
+        set_cursor(15,30);
+        printEndMessage();
+    }else{
+        clear_screen();
+        picture_spaceshipt();
+        set_cursor(0,0);
+        // puts(convertInt(enemy_count));
+        for(int i=0;i<10;i++){
+            picture_enemy(enemies[i]);
+        }
+        if(isShooting){
+            picture_spaceship_bullet();
+            check_collisions();
+        }
+        picture_points();
+        picture_lifes_gui();
+        picture_bombs();
     }
-    if(isShooting){
-        picture_spaceship_bullet();
-        check_collisions();
-    }
-    picture_points();
-    picture_lifes_gui();
-    picture_bombs();
 }

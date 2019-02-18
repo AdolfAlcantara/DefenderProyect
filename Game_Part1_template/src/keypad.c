@@ -14,11 +14,13 @@ void keypad_init(){
 }
 
 uint8_t keypad_getkey(){
-    uint8_t key = *BTN_STATE_REG_ADDR;
-    // uint8_t pos = 0;
-    // uint8_t back_value = 0;
-    // if(CHECK_BIT(keys,pos)){
-    //     back_value = pos+1;
-    // }
-    return key;
+    uint8_t keys = *BTN_STATE_REG_ADDR;
+    uint8_t pos = 0;
+    if(keys!=0){
+        while(!CHECK_BIT(keys,pos)){
+            pos++;
+        }
+        pos++;
+    }
+   return pos;
 }

@@ -41,6 +41,17 @@ void puts(char *word){
     }
 }
 
+void clear_screen_endgame(){
+    set_cursor(0,0);
+    set_color(15,0);
+    for(int i=0;i<30;i++){
+        for(int j=0;j<80;j++){
+            set_cursor(i,j);
+            put_char(' ');
+        }
+    }
+}
+
 void clear_screen(){
     set_cursor(0,0);
     set_color(0,0);
@@ -172,19 +183,25 @@ int divr(int num1, int num2)
    return num1 ; 
 }
 
-uint8_t get_rand(){
+int get_rand(){
     uint8_t rnumber = *MS_COUNTER_REG_ADDR;
-    rnumber = rnumber << 6;
-    rnumber = rnumber >> 6;
+    rnumber = rnumber << 5;
+    rnumber = rnumber >> 5;
     return rnumber;
 }
 
-// char* toStr(int n){
-//     char *convertString = "0123456789ABCDEF";
-//     int x = divr(n,10);
-//     int y = divq(n,10);
-//     // if (x < 10)
-//       return convertString[x] + *convertString[y];
-//     // else
-//     //   return toStr(divq(n,10)) + convertString[divr(n,10)];
+// char* convertInt(int number)
+// {
+//     if (number == 0)
+//         return "0";
+//     char* temp="";
+//     char* returnvalue="";
+//     while (number>0)
+//     {
+//         temp+=(divr(number,10)+48);
+//         number = divq(number,0);
+//     }
+//     for (int i=0;i<temp.length();i++)
+//         returnvalue+=temp[temp.length()-i-1];
+//     return returnvalue;
 // }
