@@ -45,10 +45,16 @@ begin
         default: aluFunc = 3'dx;
       endcase
     end
-    `ADDI,`ADDIU:begin
+    `ADDI:begin
       rfWriteEnable = 1'd1;
       aluFunc = 3'd0;
       aluSrc = 1'd1;
+    end
+    `ADDIU:begin
+      rfWriteEnable = 1'd1;
+      aluFunc = 3'd0;
+      aluSrc = 1'd1;
+      bitXtend = 1'd1;
     end
     `ANDI:begin
       rfWriteEnable = 1'd1;
@@ -78,7 +84,7 @@ begin
       aluFunc = 3'd0;
       aluSrc = 1'd1;
       memRead = 1'd1;
-      rfWriteDataSel = 1'd1; 
+      rfWriteDataSel = 2'd1; 
     end 
     `SW:begin //sw
       aluFunc = 3'd0;

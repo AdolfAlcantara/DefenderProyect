@@ -4,12 +4,7 @@ module BitExtender (
     output [31:0] out //! Extended output value (32 bits)
 );
 
-always @(*) begin
-    if(in[15])
-        out = {16'h0000,in};
-    else
-        out = {16'hFFFF,in};
-end
+assign out = x ? {{16{1'h0}},in} : {{16{in[15]}},in};
 
 endmodule
 

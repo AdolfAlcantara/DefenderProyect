@@ -22,7 +22,7 @@ module MIPS32SOC (
     wire [31:0] rfData2 /*verilator public*/;
     wire [31:0] imm32;
     wire [15:0] imm16;
-    wire [7:0] memAddr;
+    // wire [7:0] memAddr;
     wire memWrite;
     wire memRead;
     wire [31:0] memData;
@@ -36,6 +36,8 @@ module MIPS32SOC (
     wire isBNE /*verilator public*/;
     wire isZero /*verilator public*/;
     wire bitXtend;
+    wire [10:0] physicalPC;
+    wire [10:0] physicalAddr;
     wire invalidPC /*verilator public*/;
     wire invalidAddr /*verilator public*/;
     wire invalidOpcode /*verilator public*/;
@@ -46,7 +48,7 @@ module MIPS32SOC (
     assign rs = inst[25:21];
     assign opcode = inst[31:26];
     assign imm16 = inst[15:0];
-    assign memAddr = aluResult[9:2];
+    // assign memAddr = aluResult; //antes aluResult[9:2]
 
     assign pcPlus4 = PC + 32'd4;
     assign jmpTarget32 = {pcPlus4[31:28], inst[25:0], 2'b00};
@@ -55,6 +57,7 @@ module MIPS32SOC (
     assign rfWriteAddr = rfWriteAddrSel? rd : rt; // MUX
     assign aluOperand2 = aluSrc? imm32 : rfData2; // MUX
     assign rfWriteData = rfWriteDataSel[0]? memData : aluResult; // MUX
+
 
     // Next PC value
     always @ (*) begin
@@ -73,21 +76,21 @@ module MIPS32SOC (
     // PC
     always @ (posedge clk) begin
         if (rst)
-            PC <= 32'd0;
+            PC <= 32'h400000;
         else
             PC <= nextPC;
     end
   
     // Instruction Memory
     AsyncROM instMem (
-        .addr( PC[9:2] ),
+        .addr({{2'b00}, physicalPC[10:2]} ),
         .en( 1'b1 ),
         .dout( inst )
     );
 
     // Data Memory
     RAMDualPort dataMem (
-        .A( memAddr ),
+        .A( physicalAddr ),
         .D_in( rfData2 ),
         .str( memWrite ),
         .C( clk ),
@@ -140,4 +143,20 @@ module MIPS32SOC (
     .bitXtend( bitXtend ),
     .invOpcode( invalidOpcode )
   );
+
+  //PCDecoder
+  PCDecoder PCDecoder_i14 (
+    .virtPC(PC),
+    .physPC(physicalPC),
+    .invPC(invalidPC)
+  );
+
+  //MemDecoder
+  MemDecoder MemDecoder_i15(
+      .virtAddr(aluResult),
+      .physAddr(physicalAddr),
+      .invAddr(invalidAddr)
+  );
+
+
 endmodule
