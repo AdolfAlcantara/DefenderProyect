@@ -178,3 +178,48 @@ const uint32_t test_invalid_stkaddr_code[] = {
     /*0x00400010: */ 0x08100004, //j	0x400010
 };
 const int TEST_INVALID_STKADDR_CODE_SIZE = 5;
+
+// File 'test_xor.S'
+const uint32_t test_xor_code[] = {
+    /*0x00000000: */ 0x00854026, //xor	t0, a0, a1
+    /*0x00000004: */ 0x00c54826, //xor	t1, a2, a1
+    /*0x00000008: */ 0x00c65026, //xor	t2, a2, a2
+    /*0x0000000c: */ 0x08000003, //j	0xc
+};
+const int TEST_XOR_CODE_SIZE = 4;
+
+// File 'test_xori.S'
+const uint32_t test_xori_code[] = {
+    /*0x00000000: */ 0x3888ffff, //xori	t0, a0, 0xffff
+    /*0x00000004: */ 0x38c9ffff, //xori	t1, a2, 0xffff
+    /*0x00000008: */ 0x38ca3344, //xori	t2, a2, 0x3344
+    /*0x0000000c: */ 0x08000003, //j	0xc
+};
+const int TEST_XORI_CODE_SIZE = 4;
+
+// File 'test_sltu.S'
+const uint32_t test_sltu_code[] = {
+    /*0x00000000: */ 0x0085402b, //sltu	t0, a0, a1
+    /*0x00000004: */ 0x00c7482b, //sltu	t1, a2, a3
+    /*0x00000008: */ 0x00a6502b, //sltu	t2, a1, a2
+    /*0x0000000c: */ 0x08000003, //j	0xc
+};
+const int TEST_SLTU_CODE_SIZE = 4;
+
+// File 'test_sltiu.S'
+const uint32_t test_sltiu_code[] = {
+    /*0x00000000: */ 0x2c882903, //sltiu	t0, a0, 10499
+    /*0x00000004: */ 0x2cc901f4, //sltiu	t1, a2, 500
+    /*0x00000008: */ 0x2caaffff, //sltiu	t2, a1, -1
+    /*0x0000000c: */ 0x08000003, //j	0xc
+};
+const int TEST_SLTIU_CODE_SIZE = 4;
+
+// File 'test_slti.S'
+const uint32_t test_slti_code[] = {
+    /*0x00000000: */ 0x28882905, //slti	t0, a0, 10501
+    /*0x00000004: */ 0x28c90000, //slti	t1, a2, 0
+    /*0x00000008: */ 0x28aaffff, //slti	t2, a1, -1
+    /*0x0000000c: */ 0x08000003, //j	0xc
+};
+const int TEST_SLTI_CODE_SIZE = 4;

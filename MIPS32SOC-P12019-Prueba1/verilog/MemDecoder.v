@@ -8,7 +8,7 @@ module MemDecoder (
 always @(*) begin
 
     invAddr = 1'd0;
-    physAddr = 11'dx;
+    physAddr = 13'dx;
 
     if(virtAddr >= 32'h7FFFEFFC & virtAddr < 32'h7FFFFFFC)
         physAddr = virtAddr - 32'h7FFFEFFC + 32'h400;

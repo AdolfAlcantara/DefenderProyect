@@ -36,8 +36,9 @@ module MIPS32SOC (
     wire isBNE /*verilator public*/;
     wire isZero /*verilator public*/;
     wire bitXtend;
-    wire [10:0] physicalPC;
-    wire [10:0] physicalAddr;
+    wire isMemUsed;
+    wire [11:0] physicalPC;
+    wire [12:0] physicalAddr;
     wire invalidPC /*verilator public*/;
     wire invalidAddr /*verilator public*/;
     wire invalidOpcode /*verilator public*/;
@@ -68,6 +69,8 @@ module MIPS32SOC (
                 nextPC = branchTargetAddr;
             else if (isBNE & !isZero)
                 nextPC = branchTargetAddr;
+            else if(isMemUsed & invalidAddr)
+                 nextPC = nextPC;
             else
                 nextPC = pcPlus4;
         end
@@ -77,20 +80,22 @@ module MIPS32SOC (
     always @ (posedge clk) begin
         if (rst)
             PC <= 32'h400000;
+        else if(invalidPC | invalidOpcode)
+            PC <= PC;
         else
             PC <= nextPC;
     end
   
     // Instruction Memory
     AsyncROM instMem (
-        .addr({{2'b00}, physicalPC[10:2]} ),
+        .addr({{2'b00}, physicalPC[11:2]} ),
         .en( 1'b1 ),
         .dout( inst )
     );
 
     // Data Memory
     RAMDualPort dataMem (
-        .A( physicalAddr ),
+        .A( {{2'b00},physicalAddr[12:2]} ),
         .D_in( rfData2 ),
         .str( memWrite ),
         .C( clk ),
@@ -141,7 +146,8 @@ module MIPS32SOC (
     .aluSrc( aluSrc ),    
     .aluFunc( aluFunc ),
     .bitXtend( bitXtend ),
-    .invOpcode( invalidOpcode )
+    .invOpcode( invalidOpcode ),
+    .memUsed(isMemUsed)
   );
 
   //PCDecoder

@@ -14,7 +14,8 @@ module ControlUnit(
     output aluSrc, //! ALU source
     output [2:0] aluFunc, //! ALU operation
     output bitXtend, //! Bit extension, 0 = sign extend, 1 = zero extend
-    output invOpcode //! Invalid opcode or function
+    output invOpcode, //! Invalid opcode or function
+    output memUsed //! To validate if operation use memory
 );
 
 always @ (opc or func)
@@ -31,6 +32,7 @@ begin
     aluFunc = 3'd0;
     bitXtend = 1'd0; 
     invOpcode = 1'd0;
+    memUsed = 1'd0;
 
   case(opc)
     6'b000000 :begin//R
@@ -42,34 +44,49 @@ begin
         `AND:      aluFunc = 3'd2;
         `OR:       aluFunc = 3'd3;
         `SLT:      aluFunc = 3'd4;
+        `SLTU:     aluFunc = 3'd7;
+        `XOR:      aluFunc = 3'd6;
         default: aluFunc = 3'dx;
       endcase
     end
-    `ADDI:begin
+    `ADDI,`ADDIU:begin
       rfWriteEnable = 1'd1;
       aluFunc = 3'd0;
       aluSrc = 1'd1;
-    end
-    `ADDIU:begin
-      rfWriteEnable = 1'd1;
-      aluFunc = 3'd0;
-      aluSrc = 1'd1;
-      bitXtend = 1'd1;
     end
     `ANDI:begin
       rfWriteEnable = 1'd1;
       aluFunc = 3'd2;
       aluSrc = 1'd1;
+      bitXtend = 1'd1;
     end
     `ORI:begin
       rfWriteEnable = 1'd1;
       aluFunc = 3'd3;
       aluSrc = 1'd1;
+      bitXtend = 1'd1;
+    end
+    `XORI:begin
+      rfWriteEnable = 1'd1;
+      aluFunc = 3'd6;
+      aluSrc = 1'd1;
+      bitXtend = 1'd1;
+    end
+    `SLTI:begin
+      rfWriteEnable = 1'd1;
+      aluFunc = 3'd4;
+      aluSrc = 1'd1;
+    end
+    `SLTIU:begin
+     rfWriteEnable =1'd1;
+     aluFunc = 3'd7;
+     aluSrc = 1'd1;
     end
     `LUI:begin
       rfWriteEnable = 1'd1;
       aluFunc = 3'd5;
       aluSrc = 1'd1;
+      bitXtend = 1'd1;
     end
     `BEQ:begin//beq
       aluFunc = 3'd1;
@@ -84,12 +101,14 @@ begin
       aluFunc = 3'd0;
       aluSrc = 1'd1;
       memRead = 1'd1;
-      rfWriteDataSel = 2'd1; 
+      rfWriteDataSel = 2'd1;
+      memUsed = 1'd1; 
     end 
     `SW:begin //sw
       aluFunc = 3'd0;
       memWrite = 1'd1;
       aluSrc = 1'd1;
+      memUsed = 1'd1;
     end
     `JUMP: begin //jump
       jmp = 1'd1;

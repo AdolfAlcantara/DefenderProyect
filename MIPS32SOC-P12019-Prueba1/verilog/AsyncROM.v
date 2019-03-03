@@ -1,5 +1,5 @@
 module AsyncROM (
-  input [10:0] addr,
+  input [11:0] addr,
   input en,
   output [31:0] dout
 );

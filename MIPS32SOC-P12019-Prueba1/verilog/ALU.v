@@ -15,9 +15,12 @@ always @ (*) begin
     3'd3: res = a | b;
     3'd4: res = {31'd0,($signed(a) < $signed(b))};
     3'd5: res = b << 16;
+    3'd6: res = a ^ b;
+    3'd7: res = {31'd0,($unsigned(a) < $unsigned(b))};
     default: res = 32'dx;
   endcase
 
   isZero = (res == 32'd0);
 end
 endmodule
+ 
