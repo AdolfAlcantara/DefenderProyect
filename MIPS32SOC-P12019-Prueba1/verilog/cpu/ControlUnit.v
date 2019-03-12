@@ -15,7 +15,8 @@ module ControlUnit(
     output [2:0] aluFunc, //! ALU operation
     output bitXtend, //! Bit extension, 0 = sign extend, 1 = zero extend
     output invOpcode, //! Invalid opcode or function
-    output memUsed //! To validate if operation use memory
+    output memBitExt, //!indicates the type of extension in case of read
+    output [1:0] memDataSize //!Size of data to read/write
 );
 
 always @ (opc or func)
@@ -32,7 +33,9 @@ begin
     aluFunc = 3'd0;
     bitXtend = 1'd0; 
     invOpcode = 1'd0;
-    memUsed = 1'd0;
+    memBitExt = 1'd0;
+    memDataSize = 2'd0;
+    
 
   case(opc)
     6'b000000 :begin//R
@@ -102,13 +105,46 @@ begin
       aluSrc = 1'd1;
       memRead = 1'd1;
       rfWriteDataSel = 2'd1;
-      memUsed = 1'd1; 
+    end
+    `LH:begin
+      rfWriteEnable = 1'd1;
+      aluFunc = 3'd0;
+      aluSrc = 1'd1;
+      memRead = 1'd1;
+      rfWriteDataSel = 2'd1;
+      memDataSize = 2'd1; 
     end 
+    `LHU:begin
+      rfWriteEnable=1'd1;
+      aluFunc = 3'd0;
+      aluSrc =1'd1;
+      memRead = 1'd1;
+      rfWriteDataSel = 2'd1;
+      memDataSize = 2'd1;
+      memBitExt = 1'd1;
+    end
+    `LB:begin
+      rfWriteEnable = 1'd1;
+      aluFunc = 3'd0;
+      aluSrc = 1'd1;
+      memRead = 1'd1;
+      rfWriteDataSel = 2'd1;
+      memDataSize = 2'd2; 
+    end
+    `LBU:begin
+      rfWriteEnable=1'd1;
+      aluFunc = 3'd0;
+      aluSrc =1'd1;
+      memRead = 1'd1;
+      rfWriteDataSel = 2'd1;
+      memDataSize = 2'd2;
+      memBitExt = 1'd1;
+    end
     `SW:begin //sw
       aluFunc = 3'd0;
       memWrite = 1'd1;
       aluSrc = 1'd1;
-      memUsed = 1'd1;
+      memBitExt = 1'dx;
     end
     `JUMP: begin //jump
       jmp = 1'd1;
@@ -126,6 +162,8 @@ begin
       aluFunc = 3'dx;
       bitXtend = 1'dx; 
       invOpcode = 1'd1;
+      memDataSize=2'dx;
+      memBitExt = 1'dx;
     end
   endcase
 end

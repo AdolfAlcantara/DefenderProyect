@@ -20,3 +20,8 @@
 `define JUMP   6'h02
 `define XOR    6'h26
 `define XORI   6'h0E
+
+`define LH     6'h21
+`define LHU    6'h25
+`define LB     6'h20
+`define LBU    6'h24

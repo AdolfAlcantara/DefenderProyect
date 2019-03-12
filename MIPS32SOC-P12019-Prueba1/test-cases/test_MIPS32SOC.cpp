@@ -5,13 +5,16 @@
 #include <random>
 #include "doctest.h"
 #include "VMIPS32SOC_AsyncROM.h"
-#include "VMIPS32SOC_RAMDualPort.h"
+#include "VMIPS32SOC_DataMem.h"
 #include "VMIPS32SOC_RegisterFile.h"
 #include "VMIPS32SOC_MIPS32SOC.h"
+#include "VMIPS32SOC_VGATextCard.h"
+#include "VMIPS32SOC_DualPortVGARam.h"
 #include "VMIPS32SOC.h"
 
 #define GLOBAL_BASEADDR 0x10010000
 #define STACK_BASEADDR  0x7FFFEFFC
+#define VGA_BASEADDR    0x0000B800
 #define CODE_BASEADDR   0x00400000
 
 #define DECLARE_MIPS32_REGS(m) \
@@ -47,7 +50,9 @@
     uint32_t& sp = m.MIPS32SOC->regFile->memory[static_cast<int>(Mips32RegIndex::sp)]; \
     uint32_t& fp = m.MIPS32SOC->regFile->memory[static_cast<int>(Mips32RegIndex::fp)]; \
     uint32_t& ra = m.MIPS32SOC->regFile->memory[static_cast<int>(Mips32RegIndex::ra)]; \
-    uint32_t& pc = m.MIPS32SOC->PC
+    uint32_t& pc = m.MIPS32SOC->PC; \
+    uint32_t* dataMem = m.MIPS32SOC->dataMem->memory; \
+    uint32_t* vgaFB = m.MIPS32SOC->vgaTextCard->frameBuff->memory
 
 #define CHECK_ERROR_SIGNALS(m) \
         do { \
@@ -366,16 +371,16 @@ TEST_CASE("'sltu' test") {
     CHECK(t2 == 1);
 }
 
-TEST_CASE("'lw' test") {
+TEST_CASE("'lw' data memory test") {
     VMIPS32SOC m;
     DECLARE_MIPS32_REGS(m);
 
     randomizeRegisterFile(m);
 
     a0 = GLOBAL_BASEADDR;
-    m.MIPS32SOC->dataMem->memory[0] = 0xaabbccdd;
-    m.MIPS32SOC->dataMem->memory[4] = 0x11223344;
-    m.MIPS32SOC->dataMem->memory[16] = 0xdeadbeef;
+    dataMem[0] = 0xaabbccdd;
+    dataMem[4] = 0x11223344;
+    dataMem[16] = 0xdeadbeef;
 
     setProgramCode(m, test_lw_code, TEST_LW_CODE_SIZE);
 
@@ -398,7 +403,287 @@ TEST_CASE("'lw' test") {
     CHECK(t2 == 0xdeadbeef);
 }
 
-TEST_CASE("'sw' test") {
+TEST_CASE("'lb' data memory test") {
+    VMIPS32SOC m;
+    DECLARE_MIPS32_REGS(m);
+
+    randomizeRegisterFile(m);
+
+    a0 = GLOBAL_BASEADDR;
+    dataMem[0] = 0xaabb1122;
+
+    setProgramCode(m, test_lb_code, TEST_LB_CODE_SIZE);
+
+    reset(m);
+    REQUIRE(pc == CODE_BASEADDR);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+
+    clockPulse(m);
+    
+    CHECK(t0 == 0xffffffaa);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+
+    clockPulse(m);
+    
+    CHECK(t1 == 0xffffffbb);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+
+    clockPulse(m);
+    
+    CHECK(t2 == 0x00000011);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+
+    clockPulse(m);
+    
+    CHECK(t3 == 0x00000022);
+}
+
+TEST_CASE("'lbu' data memory test") {
+    VMIPS32SOC m;
+    DECLARE_MIPS32_REGS(m);
+
+    randomizeRegisterFile(m);
+
+    a0 = GLOBAL_BASEADDR;
+    dataMem[0] = 0xaabb1122;
+
+    setProgramCode(m, test_lbu_code, TEST_LBU_CODE_SIZE);
+
+    reset(m);
+    REQUIRE(pc == CODE_BASEADDR);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+    
+    CHECK(t0 == 0x000000aa);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(t1 == 0x000000bb);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(t2 == 0x00000011);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(t3 == 0x00000022);
+}
+
+TEST_CASE("'lh' data memory test") {
+    VMIPS32SOC m;
+    DECLARE_MIPS32_REGS(m);
+
+    randomizeRegisterFile(m);
+
+    a0 = GLOBAL_BASEADDR;
+    dataMem[0] = 0xaabb1122;
+
+    setProgramCode(m, test_lh_code, TEST_LH_CODE_SIZE);
+
+    reset(m);
+    REQUIRE(pc == CODE_BASEADDR);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+    
+    CHECK(t0 == 0xffffaabb);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(t1 == 0x00001122);
+}
+
+TEST_CASE("'lhu' data memory test") {
+    VMIPS32SOC m;
+    DECLARE_MIPS32_REGS(m);
+
+    randomizeRegisterFile(m);
+
+    a0 = GLOBAL_BASEADDR;
+    dataMem[0] = 0xaabb1122;
+
+    setProgramCode(m, test_lhu_code, TEST_LHU_CODE_SIZE);
+
+    reset(m);
+    REQUIRE(pc == CODE_BASEADDR);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+    
+    CHECK(t0 == 0x0000aabb);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(t1 == 0x00001122);
+}
+
+TEST_CASE("'lw' vga memory test") {
+    VMIPS32SOC m;
+    DECLARE_MIPS32_REGS(m);
+
+    randomizeRegisterFile(m);
+
+    a0 = VGA_BASEADDR;
+    m.MIPS32SOC->vgaTextCard->frameBuff->memory[0] = 0xaabbccdd;
+    m.MIPS32SOC->vgaTextCard->frameBuff->memory[4] = 0x11223344;
+    m.MIPS32SOC->vgaTextCard->frameBuff->memory[16] = 0xdeadbeef;
+
+    setProgramCode(m, test_lw_code, TEST_LW_CODE_SIZE);
+
+    reset(m);
+    REQUIRE(pc == CODE_BASEADDR);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+    
+    CHECK(t0 == 0xaabbccdd);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(t1 == 0x11223344);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(t2 == 0xdeadbeef);
+}
+
+TEST_CASE("'lb' vga memory test") {
+    VMIPS32SOC m;
+    DECLARE_MIPS32_REGS(m);
+
+    randomizeRegisterFile(m);
+
+    a0 = VGA_BASEADDR;
+    vgaFB[0] = 0xaabb1122;
+
+    setProgramCode(m, test_lb_code, TEST_LB_CODE_SIZE);
+
+    reset(m);
+    REQUIRE(pc == CODE_BASEADDR);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+
+    clockPulse(m);
+    
+    CHECK(t0 == 0xffffffaa);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+
+    clockPulse(m);
+    
+    CHECK(t1 == 0xffffffbb);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+
+    clockPulse(m);
+    
+    CHECK(t2 == 0x00000011);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+
+    clockPulse(m);
+    
+    CHECK(t3 == 0x00000022);
+}
+
+TEST_CASE("'lbu' vga memory test") {
+    VMIPS32SOC m;
+    DECLARE_MIPS32_REGS(m);
+
+    randomizeRegisterFile(m);
+
+    a0 = VGA_BASEADDR;
+    vgaFB[0] = 0xaabb1122;
+
+    setProgramCode(m, test_lbu_code, TEST_LBU_CODE_SIZE);
+
+    reset(m);
+    REQUIRE(pc == CODE_BASEADDR);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+    
+    CHECK(t0 == 0x000000aa);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(t1 == 0x000000bb);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(t2 == 0x00000011);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(t3 == 0x00000022);
+}
+
+TEST_CASE("'lh' vga memory test") {
+    VMIPS32SOC m;
+    DECLARE_MIPS32_REGS(m);
+
+    randomizeRegisterFile(m);
+
+    a0 = VGA_BASEADDR;
+    vgaFB[0] = 0xaabb1122;
+
+    setProgramCode(m, test_lh_code, TEST_LH_CODE_SIZE);
+
+    reset(m);
+    REQUIRE(pc == CODE_BASEADDR);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+    
+    CHECK(t0 == 0xffffaabb);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(t1 == 0x00001122);
+}
+
+TEST_CASE("'lhu' vga memory test") {
+    VMIPS32SOC m;
+    DECLARE_MIPS32_REGS(m);
+
+    randomizeRegisterFile(m);
+
+    a0 = VGA_BASEADDR;
+    vgaFB[0] = 0xaabb1122;
+
+    setProgramCode(m, test_lhu_code, TEST_LHU_CODE_SIZE);
+
+    reset(m);
+    REQUIRE(pc == CODE_BASEADDR);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+    
+    CHECK(t0 == 0x0000aabb);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(t1 == 0x00001122);
+}
+
+TEST_CASE("'sw' data memory test") {
     VMIPS32SOC m;
     DECLARE_MIPS32_REGS(m);
 
@@ -415,17 +700,237 @@ TEST_CASE("'sw' test") {
     REQUIRE(m.MIPS32SOC->invalidAddr == 0);
     clockPulse(m);
 
-    CHECK(m.MIPS32SOC->dataMem->memory[0] == 0xaabbccdd);
+    CHECK(dataMem[0] == 0xaabbccdd);
     CHECK_ERROR_SIGNALS(m);
     REQUIRE(m.MIPS32SOC->invalidAddr == 0);
     clockPulse(m);
 
-    CHECK(m.MIPS32SOC->dataMem->memory[4] == 0x11223344);
+    CHECK(dataMem[4] == 0x11223344);
     CHECK_ERROR_SIGNALS(m);
     REQUIRE(m.MIPS32SOC->invalidAddr == 0);
     clockPulse(m);
     
-    CHECK(m.MIPS32SOC->dataMem->memory[16] == 0xdeadbeef);
+    CHECK(dataMem[16] == 0xdeadbeef);
+}
+
+TEST_CASE("'sh' data memory test") {
+    VMIPS32SOC m;
+    DECLARE_MIPS32_REGS(m);
+
+    a0 = GLOBAL_BASEADDR;
+    t0 = 0xaabb;
+    t1 = 0xccdd;
+
+    dataMem[0] = 0x11111111;
+    dataMem[4] = 0x22222222;
+
+    setProgramCode(m, test_sh_code, TEST_SH_CODE_SIZE);
+
+    reset(m);
+    REQUIRE(pc == CODE_BASEADDR);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(dataMem[0] == 0xaabb1111);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(dataMem[0] == 0xaabbccdd);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(dataMem[4] == 0xaabb2222);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(dataMem[4] == 0xaabbccdd);
+}
+
+TEST_CASE("'sb' data memory test") {
+    VMIPS32SOC m;
+    DECLARE_MIPS32_REGS(m);
+
+    a0 = GLOBAL_BASEADDR;
+    t0 = 0xaa;
+    t1 = 0xbb;
+    t2 = 0xcc;
+    t3 = 0xdd;
+    dataMem[0] = 0x11111111;
+    dataMem[4] = 0x22222222;
+
+    setProgramCode(m, test_sb_code, TEST_SB_CODE_SIZE);
+
+    reset(m);
+    REQUIRE(pc == CODE_BASEADDR);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(dataMem[0] == 0xaa111111);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(dataMem[0] == 0xaabb1111);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(dataMem[0] == 0xaabbcc11);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(dataMem[0] == 0xaabbccdd);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(dataMem[4] == 0xaa222222);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(dataMem[4] == 0xaabb2222);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(dataMem[4] == 0xaabbcc22);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(dataMem[4] == 0xaabbccdd);
+}
+
+TEST_CASE("'sw' vga memory test") {
+    VMIPS32SOC m;
+    DECLARE_MIPS32_REGS(m);
+
+    a0 = VGA_BASEADDR;
+    t0 = 0xaabbccdd;
+    t1 = 0x11223344;
+    t2 = 0xdeadbeef;
+
+    setProgramCode(m, test_sw_code, TEST_SW_CODE_SIZE);
+
+    reset(m);
+    REQUIRE(pc == CODE_BASEADDR);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(vgaFB[0] == 0xaabbccdd);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(vgaFB[4] == 0x11223344);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+    
+    CHECK(vgaFB[16] == 0xdeadbeef);
+}
+
+TEST_CASE("'sh' vga memory test") {
+    VMIPS32SOC m;
+    DECLARE_MIPS32_REGS(m);
+
+    a0 = VGA_BASEADDR;
+    t0 = 0xaabb;
+    t1 = 0xccdd;
+
+    vgaFB[0] = 0x11111111;
+    vgaFB[4] = 0x22222222;
+
+    setProgramCode(m, test_sh_code, TEST_SH_CODE_SIZE);
+
+    reset(m);
+    REQUIRE(pc == CODE_BASEADDR);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(vgaFB[0] == 0xaabb1111);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(vgaFB[0] == 0xaabbccdd);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(vgaFB[4] == 0xaabb2222);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(vgaFB[4] == 0xaabbccdd);
+}
+
+TEST_CASE("'sb' vga memory test") {
+    VMIPS32SOC m;
+    DECLARE_MIPS32_REGS(m);
+
+    a0 = VGA_BASEADDR;
+    t0 = 0xaa;
+    t1 = 0xbb;
+    t2 = 0xcc;
+    t3 = 0xdd;
+    vgaFB[0] = 0x11111111;
+    vgaFB[4] = 0x22222222;
+
+    setProgramCode(m, test_sb_code, TEST_SB_CODE_SIZE);
+
+    reset(m);
+    REQUIRE(pc == CODE_BASEADDR);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(vgaFB[0] == 0xaa111111);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(vgaFB[0] == 0xaabb1111);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(vgaFB[0] == 0xaabbcc11);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(vgaFB[0] == 0xaabbccdd);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(vgaFB[4] == 0xaa222222);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(vgaFB[4] == 0xaabb2222);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(vgaFB[4] == 0xaabbcc22);
+    CHECK_ERROR_SIGNALS(m);
+    REQUIRE(m.MIPS32SOC->invalidAddr == 0);
+    clockPulse(m);
+
+    CHECK(vgaFB[4] == 0xaabbccdd);
 }
 
 TEST_CASE("'jmp' test") {

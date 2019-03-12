@@ -36,13 +36,32 @@ module MIPS32SOC (
     wire isBNE /*verilator public*/;
     wire isZero /*verilator public*/;
     wire bitXtend;
-    wire isMemUsed;
     wire [11:0] physicalPC;
     wire [12:0] physicalAddr;
     wire invalidPC /*verilator public*/;
     wire invalidAddr /*verilator public*/;
     wire invalidOpcode /*verilator public*/;
-  
+
+    //tercerEntrega new wires
+    wire [2:0] memEnabler;      //0 for datamem, 2 for vgamem, 4 for i/omem
+    wire [1:0] memBankSel;      //selects the bank, 0 for data, 1 vga, 2 i/o
+    wire [1:0] memDataSize;     //size of data yo be read/write 0 word, 1 half, 2byte
+    wire memBitExt;             //in case of read, 0 = signext, 1 = zeroext
+    wire [31:0] memWriteOutData;
+    wire [31:0] memReadOutData;
+
+    wire [3:0] encMW;            //each bit refers to the byte to be write
+
+    wire [31:0] memReadInData;  //cable de salida del MUX para decidir la entrada del MemReadDataDecoder
+
+    //vga wires
+    wire [31:0] readVGAData;
+    wire [2:0] red;
+    wire [2:0] green;
+    wire [1:0] blue;
+    wire vsync,hsync;    
+
+
     assign func = inst[5:0];
     assign rd = inst[15:11];
     assign rt = inst[20:16];
@@ -57,8 +76,18 @@ module MIPS32SOC (
 
     assign rfWriteAddr = rfWriteAddrSel? rd : rt; // MUX
     assign aluOperand2 = aluSrc? imm32 : rfData2; // MUX
-    assign rfWriteData = rfWriteDataSel[0]? memData : aluResult; // MUX
+    assign rfWriteData = rfWriteDataSel[0]? memReadOutData : aluResult; // MUX
 
+    //MemReadDataDecoderInData
+    always @(*) begin
+        case(memBankSel)
+            2'd0: memReadInData = memData;
+            2'd1: memReadInData = 32'd0; //vga
+            2'd2: memReadInData = 32'd0; //io
+            2'd3: memReadInData = 32'd0; //0
+            default: memReadInData = 32'd0;
+        endcase
+    end
 
     // Next PC value
     always @ (*) begin
@@ -69,8 +98,6 @@ module MIPS32SOC (
                 nextPC = branchTargetAddr;
             else if (isBNE & !isZero)
                 nextPC = branchTargetAddr;
-            else if(isMemUsed & invalidAddr)
-                 nextPC = nextPC;
             else
                 nextPC = pcPlus4;
         end
@@ -80,7 +107,7 @@ module MIPS32SOC (
     always @ (posedge clk) begin
         if (rst)
             PC <= 32'h400000;
-        else if(invalidPC | invalidOpcode)
+        else if(invalidPC | invalidOpcode | invalidAddr)
             PC <= PC;
         else
             PC <= nextPC;
@@ -88,20 +115,20 @@ module MIPS32SOC (
   
     // Instruction Memory
     AsyncROM instMem (
-        .addr({{2'b00}, physicalPC[11:2]} ),
+        .addr(physicalPC[11:2]),
         .en( 1'b1 ),
         .dout( inst )
     );
 
-    // Data Memory
-    RAMDualPort dataMem (
-        .A( {{2'b00},physicalAddr[12:2]} ),
-        .D_in( rfData2 ),
-        .str( memWrite ),
-        .C( clk ),
-        .ld ( memRead ),
-        .D ( memData )
-    );
+    // // Data Memory
+    // RAMDualPort dataMem (
+    //     .A( physicalAddr[12:2] ),
+    //     .D_in( rfData2 ),
+    //     .str( memWrite ),
+    //     .C( clk ),
+    //     .ld ( memRead ),
+    //     .D ( memData )
+    // );
 
     //Register File
     RegisterFile regFile (
@@ -147,7 +174,8 @@ module MIPS32SOC (
     .aluFunc( aluFunc ),
     .bitXtend( bitXtend ),
     .invOpcode( invalidOpcode ),
-    .memUsed(isMemUsed)
+    .memDataSize(memDataSize),
+    .memBitExt(memBitExt)
   );
 
   //PCDecoder
@@ -160,8 +188,59 @@ module MIPS32SOC (
   //MemDecoder
   MemDecoder MemDecoder_i15(
       .virtAddr(aluResult),
+      .memWrite(memWrite),
+      .memRead(memRead),
       .physAddr(physicalAddr),
+      .memEn(memEnabler),
+      .memBank(memBankSel),
       .invAddr(invalidAddr)
+  );
+
+  //DataMen
+  DataMem dataMem(
+      .clk(clk),
+      .en(memEnabler[0]),
+      .memWrite(encMW),
+      .addr(physicalAddr[12:2]),
+      .wdata(memWriteOutData),
+      .rdata(memData)
+  );
+
+  //MemWriteDataEncode
+  MemWriteDataEncoder MemWriteDataEncoder_i17(
+      .inData(rfData2),
+      .offset(physicalAddr[1:0]),
+      .memWrite(memWrite),
+      .dataSize(memDataSize),
+      .outData(memWriteOutData),
+      .encMW(encMW)
+  );
+   
+  //MemReadDataDecoder
+  MemReadDataDecoder MemReadDataDecoder_i18(
+      .inData(memReadInData),
+      .offset(physicalAddr[1:0]),
+      .bitExt(memBitExt),
+      .dataSize(memDataSize),
+      .outData(memReadOutData)
+  );
+
+  //VGA MODULES
+  //VGATextCard
+  VGATextCard vgaTextCard(
+      .vclk(1'd0),
+      .clk(1'd0),
+      .rst(1'd0),
+      .en(1'd0),
+      .memWrite(4'd0),
+      .addr(11'd0),
+      .wdata(32'd0),
+      .rdata(readVGAData),
+      .red(red),
+      .green(green),
+      .blue(blue),
+      .hsync(hsync),
+      .vsync(vsync)
   );
 
 

@@ -8,11 +8,15 @@ find_package(VERILATOR REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set(CPP_SRCDIR "${CMAKE_SOURCE_DIR}/../cpp")
 set(VERILOG_SRCDIR "${CMAKE_SOURCE_DIR}/../verilog")
-set(VERILOG_SOURCES "${VERILOG_SRCDIR}/ALU.v ${VERILOG_SRCDIR}/ControlUnit.v \
-                    ${VERILOG_SRCDIR}/MIPS32SOC.v ${VERILOG_SRCDIR}/RAMDualPort.v \
-                    ${VERILOG_SRCDIR}/AsyncROM.v ${VERILOG_SRCDIR}/RegisterFile.v \
-                    ${VERILOG_SRCDIR}/BitExtender.v ${VERILOG_SRCDIR}/PCDecoder.v \
-                    ${VERILOG_SRCDIR}/MemDecoder.v")
+set(VERILOG_SOURCES "${VERILOG_SRCDIR}/cpu/ALU.v ${VERILOG_SRCDIR}/cpu/ControlUnit.v \
+                    ${VERILOG_SRCDIR}/cpu/MIPS32SOC.v ${VERILOG_SRCDIR}/cpu/DataMem.v \
+                    ${VERILOG_SRCDIR}/cpu/AsyncROM.v ${VERILOG_SRCDIR}/cpu/RegisterFile.v \
+                    ${VERILOG_SRCDIR}/cpu/BitExtender.v ${VERILOG_SRCDIR}/cpu/PCDecoder.v \
+                    ${VERILOG_SRCDIR}/cpu/MemDecoder.v ${VERILOG_SRCDIR}/cpu/MemReadDataDecoder.v \
+                    ${VERILOG_SRCDIR}/cpu/MemWriteDataEncoder.v \
+                    ${VERILOG_SRCDIR}/vga/DualPortVGARam.v ${VERILOG_SRCDIR}/vga/FontRom.v \
+                    ${VERILOG_SRCDIR}/vga/RomColorPalette.v ${VERILOG_SRCDIR}/vga/VGA80X30Color.v \
+                    ${VERILOG_SRCDIR}/vga/VGATextCard.v")
 set(VTOPMODULE "MIPS32SOC")
 set(VERILOG_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/verilog-build")
 set(MIPS32SOC_LIB "${VERILOG_BINARY_DIR}/V${VTOPMODULE}__ALL.a")
@@ -21,10 +25,10 @@ separate_arguments(VERILOG_SOURCES)
 # Run verilator to compile the MIPS32SOC
 add_custom_command (
     OUTPUT ${MIPS32SOC_LIB}
-    COMMAND ${VERILATOR} -DNO_INIT_MEM -Wall -Wno-fatal -I${VERILOG_SRCDIR} --cc ${VERILOG_SOURCES}
+    COMMAND ${VERILATOR} -DNO_INIT_MEM -Wall -Wno-fatal -I${VERILOG_SRCDIR}/cpu -I${VERILOG_SRCDIR}/vga --cc ${VERILOG_SOURCES}
             --top-module ${VTOPMODULE} -Mdir ${VERILOG_BINARY_DIR} -CFLAGS "-I${CPP_SRCDIR} -std=c++14 -O2 -DNDEBUG"
     COMMAND make -C ${VERILOG_BINARY_DIR} -f V${VTOPMODULE}.mk
-    MAIN_DEPENDENCY ${VERILOG_SRCDIR}/${VTOPMODULE}.v
+    MAIN_DEPENDENCY ${VERILOG_SRCDIR}/cpu/${VTOPMODULE}.v
     DEPENDS ${VERILOG_SOURCES}
   )
 
