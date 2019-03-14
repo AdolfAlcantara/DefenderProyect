@@ -25,3 +25,5 @@
 `define LHU    6'h25
 `define LB     6'h20
 `define LBU    6'h24
+`define SH     6'h29
+`define SB     6'h28

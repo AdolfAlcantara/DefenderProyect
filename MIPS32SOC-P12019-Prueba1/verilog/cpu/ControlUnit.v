@@ -144,7 +144,18 @@ begin
       aluFunc = 3'd0;
       memWrite = 1'd1;
       aluSrc = 1'd1;
-      memBitExt = 1'dx;
+    end
+    `SH: begin //store half
+      aluFunc = 3'd0;
+      memWrite = 1'd1;
+      aluSrc = 1'd1;
+      memDataSize = 2'd1;
+    end
+    `SB: begin //store byte
+      aluFunc = 3'd0;
+      memWrite = 1'd1;
+      aluSrc = 1'd1;
+      memDataSize = 2'd2;
     end
     `JUMP: begin //jump
       jmp = 1'd1;

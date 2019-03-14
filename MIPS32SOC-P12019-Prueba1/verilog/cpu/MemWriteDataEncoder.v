@@ -16,11 +16,14 @@ always @(*) begin
                 encMW = 4'b1111;
             end
             2'd1:begin
-                encMW = 4'b0011;
-                if(offset == 2'd0)
+                if(offset == 2'd0) begin
+                    encMW = 4'b0011;
                     outData  = {inData[15:0],16'd0};
-                else
-                    outData = {inData[31:16],16'd0};
+                end
+                else begin
+                    encMW = 4'b1100;
+                    outData = {16'd0,inData[15:0]};
+                end
             end
             2'd2:begin
                 case(offset)
@@ -30,15 +33,15 @@ always @(*) begin
                     end
                     2'd1: begin
                         encMW = 4'b0010;
-                        outData = {8'd0,inData[15:8],16'd0};
+                        outData = {8'd0,inData[7:0],16'd0};
                     end
                     2'd2:begin
                         encMW = 4'b0100;
-                        outData = {16'd0,inData[23:16],8'd0};
+                        outData = {16'd0,inData[7:0],8'd0};
                     end
                     2'd3:begin
                         encMW = 4'b1000;
-                        outData = {24'd0,inData[31:24]};
+                        outData = {24'd0,inData[7:0]};
                     end
                     default: begin
                         encMW = 4'dx;
@@ -51,9 +54,10 @@ always @(*) begin
                 encMW = 4'dx;
             end
         endcase
-    else
+    else begin
         outData =32'dx;
         encMW = 4'dx;
+    end
 end
 
 

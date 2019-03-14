@@ -82,7 +82,7 @@ module MIPS32SOC (
     always @(*) begin
         case(memBankSel)
             2'd0: memReadInData = memData;
-            2'd1: memReadInData = 32'd0; //vga
+            2'd1: memReadInData = readVGAData; //vga
             2'd2: memReadInData = 32'd0; //io
             2'd3: memReadInData = 32'd0; //0
             default: memReadInData = 32'd0;
@@ -229,12 +229,12 @@ module MIPS32SOC (
   //VGATextCard
   VGATextCard vgaTextCard(
       .vclk(1'd0),
-      .clk(1'd0),
-      .rst(1'd0),
-      .en(1'd0),
-      .memWrite(4'd0),
-      .addr(11'd0),
-      .wdata(32'd0),
+      .clk(clk),
+      .rst(rst),
+      .en(memEnabler[1]),
+      .memWrite(encMW),
+      .addr(physicalAddr[12:2]),
+      .wdata(memWriteOutData),
       .rdata(readVGAData),
       .red(red),
       .green(green),
