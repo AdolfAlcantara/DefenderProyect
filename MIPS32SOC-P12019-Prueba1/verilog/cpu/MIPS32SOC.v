@@ -26,14 +26,15 @@ module MIPS32SOC (
     wire memWrite;
     wire memRead;
     wire [31:0] memData;
-    wire [2:0] aluFunc;
+    wire [3:0] aluFunc;
     wire [31:0] aluOperand2;
     wire [31:0] aluResult;
     wire [31:0] branchTargetAddr;
     wire [31:0] jmpTarget32;
     wire isJmp /*verilator public*/;
-    wire isBEQ /*verilator public*/;
-    wire isBNE /*verilator public*/;
+    wire [2:0] branchSel /*verilator public*/;
+    // wire isBEQ /*verilator public*/;
+    // wire isBNE /*verilator public*/;
     wire isZero /*verilator public*/;
     wire bitXtend;
     wire [11:0] physicalPC;
@@ -162,9 +163,9 @@ module MIPS32SOC (
   ControlUnit ControlUnit_i13 (
     .opc( opcode ),
     .func( func ),
+    .rt(rt)
     .jmp( isJmp ),
-    .beq( isBEQ ),
-    .bne( isBNE ),
+    .branch(branchSel),
     .rfWriteDataSel( rfWriteDataSel ),
     .rfWriteAddrSel( rfWriteAddrSel ),
     .rfWriteEnable( rfWriteEnable ),

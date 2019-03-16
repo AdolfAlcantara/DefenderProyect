@@ -1,7 +1,7 @@
 module ALU(
     input [31:0] a,
     input [31:0] b,
-    input [2:0] func,
+    input [3:0] func,
     output reg [31:0] res,
     output reg isZero
     );
@@ -9,14 +9,16 @@ module ALU(
 always @ (*) begin
   res = 32'dx;
   case (func)
-    3'd0: res = a + b;
-    3'd1: res = a - b;
-    3'd2: res = a & b;
-    3'd3: res = a | b;
-    3'd4: res = {31'd0,($signed(a) < $signed(b))};
-    3'd5: res = b << 16;
-    3'd6: res = a ^ b;
-    3'd7: res = {31'd0,($unsigned(a) < $unsigned(b))};
+    4'd0: res = a + b;
+    4'd1: res = a - b;
+    4'd2: res = a & b;
+    4'd3: res = a | b;
+    4'd4: res = {31'd0,($signed(a) < $signed(b))};
+    4'd5: res = b << 16;
+    4'd6: res = a ^ b;
+    4'd7: res = {31'd0,($unsigned(a) < $unsigned(b))};
+    4'd8: res = b << a;
+    4'd9: res = b >> a;
     default: res = 32'dx;
   endcase
 

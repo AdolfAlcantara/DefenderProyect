@@ -27,3 +27,9 @@
 `define LBU    6'h24
 `define SH     6'h29
 `define SB     6'h28
+
+
+`define BGEZ   5'h01
+`define BGTZ   6'h07
+`define BLEZ   6'h06
+`define BLTZ   5'h00
