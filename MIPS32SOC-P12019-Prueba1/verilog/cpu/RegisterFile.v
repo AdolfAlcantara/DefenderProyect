@@ -10,6 +10,7 @@ module RegisterFile(
     input [31:0] wd,
     input we,
     input clk,
+    input rst,
     output [31:0] rd1,
     output [31:0] rd2
     );
@@ -21,8 +22,9 @@ module RegisterFile(
     
     always @(posedge clk)
     begin
-        if (we)
-            memory[wa] <= wd;
+        if(~rst)
+            if (we)
+                memory[wa] <= wd;
     end
 
     initial begin

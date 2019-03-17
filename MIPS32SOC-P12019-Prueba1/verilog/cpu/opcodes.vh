@@ -33,3 +33,13 @@
 `define BGTZ   6'h07
 `define BLEZ   6'h06
 `define BLTZ   5'h00
+
+`define SLL    6'h00
+`define SRL    6'h03
+`define SRA    6'h02
+`define SLLV   6'h04
+`define SRLV   6'h06
+`define SRAV   6'h07
+
+`define JAL    6'h03
+`define JR     6'h08

@@ -17,8 +17,9 @@ always @ (*) begin
     4'd5: res = b << 16;
     4'd6: res = a ^ b;
     4'd7: res = {31'd0,($unsigned(a) < $unsigned(b))};
-    4'd8: res = b << a;
-    4'd9: res = b >> a;
+    4'd8: res = a << b;
+    4'd9: res = a >> b;
+    4'd10: res = $signed(a) >>> $signed(b);
     default: res = 32'dx;
   endcase
 

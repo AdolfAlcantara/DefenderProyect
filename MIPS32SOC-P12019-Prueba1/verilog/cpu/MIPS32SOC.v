@@ -1,7 +1,7 @@
 /* verilator lint_off UNUSED */
 module MIPS32SOC (
     input clk, // Clock signal
-    input rst  // Reset signal
+    input reset  // Reset signal
 );
     wire [31:0] inst /*verilator public*/;
     reg  [31:0] nextPC; // Should be 'reg' because it used in a always block
@@ -11,10 +11,12 @@ module MIPS32SOC (
     wire [4:0] rd /*verilator public*/;
     wire [4:0] rt /*verilator public*/;
     wire [4:0] rs /*verilator public*/;
+    wire [4:0] sa;
     wire [5:0] opcode;
-    wire aluSrc;
+    wire [1:0] aluSrc;
+    wire aluSrc1;
     wire rfWriteEnable; // Register File Write Enable
-    wire rfWriteAddrSel; // Register File Write Address Select
+    wire [1:0] rfWriteAddrSel; // Register File Write Address Select
     wire [1:0] rfWriteDataSel; // Register File Write Data Select
     wire [4:0] rfWriteAddr; // Register File Write Address
     reg  [31:0] rfWriteData; // Register File Write Data
@@ -27,11 +29,14 @@ module MIPS32SOC (
     wire memRead;
     wire [31:0] memData;
     wire [3:0] aluFunc;
+    wire [31:0] aluOperand1;
     wire [31:0] aluOperand2;
     wire [31:0] aluResult;
     wire [31:0] branchTargetAddr;
     wire [31:0] jmpTarget32;
     wire isJmp /*verilator public*/;
+    wire isJal;
+    wire isJr;
     wire [2:0] branchSel /*verilator public*/;
     // wire isBEQ /*verilator public*/;
     // wire isBNE /*verilator public*/;
@@ -67,6 +72,7 @@ module MIPS32SOC (
 
 
     assign func = inst[5:0];
+    assign sa = inst[10:6];
     assign rd = inst[15:11];
     assign rt = inst[20:16];
     assign rs = inst[25:21];
@@ -80,9 +86,45 @@ module MIPS32SOC (
     assign jmpTarget32 = {pcPlus4[31:28], inst[25:0], 2'b00};
     assign branchTargetAddr = pcPlus4 + {imm32[29:0], 2'b00};
 
-    assign rfWriteAddr = rfWriteAddrSel? rd : rt; // MUX
-    assign aluOperand2 = aluSrc? imm32 : rfData2; // MUX
+    // assign rfWriteAddr = rfWriteAddrSel? rd : rt; // MUX
+    // assign aluOperand2 = aluSrc? imm32 : rfData2; // MUX
     assign rfWriteData = rfWriteDataSel[0]? memReadOutData : aluResult; // MUX
+
+    //cuarta entrega 
+    //bitshifting muxes
+    assign aluOperand1 = aluSrc1? rfData2 : rfData1;
+
+    //rfWriteDataSel
+    always @(*) begin
+        case(rfWriteDataSel)
+            2'd0: rfWriteData = aluResult;
+            2'd1: rfWriteData = memReadOutData;
+            2'd2: rfWriteData = pcPlus4;
+            default: rfWriteData = 32'dx;
+        endcase
+    end
+
+    //rfWriteAddr
+    always @(*) begin
+        case(rfWriteAddrSel)
+            2'd0: rfWriteAddr = rt;
+            2'd1: rfWriteAddr = rd;
+            2'd2: rfWriteAddr = 5'd31;
+            default: rfWriteAddr = 5'dx;
+        endcase
+    end
+
+    //second AluOperand
+    always @(*) begin
+        case(aluSrc)
+            2'd0: aluOperand2 = rfData2;
+            2'd1: aluOperand2 = imm32;
+            2'd2: aluOperand2 = {27'd0,sa};
+            2'd3: aluOperand2 = rfData1; 
+            default: aluOperand2 = 32'dx;
+        endcase
+    end
+
 
     //MemReadDataDecoderInData
     always @(*) begin
@@ -97,8 +139,10 @@ module MIPS32SOC (
 
     // Next PC value
     always @ (*) begin
-        if (isJmp)
+        if (isJmp || isJal)
             nextPC = jmpTarget32;
+        else if(isJr)
+            nextPC = rfData1;
         else begin
             if (branchTaken)
                 nextPC = branchTargetAddr;
@@ -109,7 +153,7 @@ module MIPS32SOC (
   
     // PC
     always @ (posedge clk) begin
-        if (rst)
+        if (reset)
             PC <= 32'h400000;
         else if(invalidPC | invalidOpcode | invalidAddr)
             PC <= PC;
@@ -134,21 +178,22 @@ module MIPS32SOC (
     //     .D ( memData )
     // );
 
-    //Register File
-    RegisterFile regFile (
-        .ra1( rs ),
-        .ra2( rt ),
-        .wa( rfWriteAddr ),
-        .wd( rfWriteData ),
-        .we( rfWriteEnable ),
-        .clk( clk ),
-        .rd1( rfData1 ),
-        .rd2( rfData2 )
-    );
+//Register File
+RegisterFile regFile (
+    .ra1( rs ),
+    .ra2( rt ),
+    .wa( rfWriteAddr ),
+    .wd( rfWriteData ),
+    .we( rfWriteEnable ),
+    .clk( clk ),
+    .rst( reset),
+    .rd1( rfData1 ),
+    .rd2( rfData2 )
+);
 
   // ALU
   ALU ALU_i11 (
-    .a( rfData1 ),
+    .a( aluOperand1 ),
     .b( aluOperand2 ),
     .func( aluFunc ),
     .res( aluResult ),
@@ -166,15 +211,18 @@ module MIPS32SOC (
   ControlUnit ControlUnit_i13 (
     .opc( opcode ),
     .func( func ),
-    .rt(rt)
+    .rt(rt),
     .jmp( isJmp ),
+    .jal( isJal),
+    .jr( isJr), 
     .branch(branchSel),
     .rfWriteDataSel( rfWriteDataSel ),
     .rfWriteAddrSel( rfWriteAddrSel ),
     .rfWriteEnable( rfWriteEnable ),
     .memWrite( memWrite ),
     .memRead( memRead ),
-    .aluSrc( aluSrc ),    
+    .aluSrc( aluSrc ),
+    .aluSrc1(aluSrc1),    
     .aluFunc( aluFunc ),
     .bitXtend( bitXtend ),
     .invOpcode( invalidOpcode ),
@@ -188,7 +236,7 @@ module MIPS32SOC (
       .zero(isZero),
       .sign(aluResult[31]),
       .branchTaken(branchTaken)
-  )
+  );
 
   //PCDecoder
   PCDecoder PCDecoder_i14 (
@@ -242,7 +290,7 @@ module MIPS32SOC (
   VGATextCard vgaTextCard(
       .vclk(1'd0),
       .clk(clk),
-      .rst(rst),
+      .rst(reset),
       .en(memEnabler[1]),
       .memWrite(encMW),
       .addr(physicalAddr[12:2]),
