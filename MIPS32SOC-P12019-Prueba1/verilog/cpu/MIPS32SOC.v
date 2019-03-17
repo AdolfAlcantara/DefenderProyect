@@ -55,6 +55,9 @@ module MIPS32SOC (
 
     wire [31:0] memReadInData;  //cable de salida del MUX para decidir la entrada del MemReadDataDecoder
 
+    //cuarta entrega
+    wire branchTaken;
+
     //vga wires
     wire [31:0] readVGAData;
     wire [2:0] red;
@@ -70,6 +73,8 @@ module MIPS32SOC (
     assign opcode = inst[31:26];
     assign imm16 = inst[15:0];
     // assign memAddr = aluResult; //antes aluResult[9:2]
+
+
 
     assign pcPlus4 = PC + 32'd4;
     assign jmpTarget32 = {pcPlus4[31:28], inst[25:0], 2'b00};
@@ -95,9 +100,7 @@ module MIPS32SOC (
         if (isJmp)
             nextPC = jmpTarget32;
         else begin
-            if (isBEQ & isZero)
-                nextPC = branchTargetAddr;
-            else if (isBNE & !isZero)
+            if (branchTaken)
                 nextPC = branchTargetAddr;
             else
                 nextPC = pcPlus4;
@@ -178,6 +181,14 @@ module MIPS32SOC (
     .memDataSize(memDataSize),
     .memBitExt(memBitExt)
   );
+
+  //BranchResolver
+  BranchResolver branchResolver(
+      .branch(branchSel),
+      .zero(isZero),
+      .sign(aluResult[31]),
+      .branchTaken(branchTaken)
+  )
 
   //PCDecoder
   PCDecoder PCDecoder_i14 (
