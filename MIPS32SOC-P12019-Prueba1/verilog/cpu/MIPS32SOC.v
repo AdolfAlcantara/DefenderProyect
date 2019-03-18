@@ -18,7 +18,7 @@ module MIPS32SOC (
     wire rfWriteEnable; // Register File Write Enable
     wire [1:0] rfWriteAddrSel; // Register File Write Address Select
     wire [1:0] rfWriteDataSel; // Register File Write Data Select
-    wire [4:0] rfWriteAddr; // Register File Write Address
+    reg [4:0] rfWriteAddr; // Register File Write Address
     reg  [31:0] rfWriteData; // Register File Write Data
     wire [31:0] rfData1 /*verilator public*/;
     wire [31:0] rfData2 /*verilator public*/;
@@ -30,7 +30,7 @@ module MIPS32SOC (
     wire [31:0] memData;
     wire [3:0] aluFunc;
     wire [31:0] aluOperand1;
-    wire [31:0] aluOperand2;
+    reg [31:0] aluOperand2;
     wire [31:0] aluResult;
     wire [31:0] branchTargetAddr;
     wire [31:0] jmpTarget32;
