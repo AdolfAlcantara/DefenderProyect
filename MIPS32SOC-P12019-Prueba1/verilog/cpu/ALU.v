@@ -19,7 +19,7 @@ always @ (*) begin
     4'd7: res = {31'd0,($unsigned(a) < $unsigned(b))};
     4'd8: res = a << b;
     4'd9: res = a >> b;
-    4'd10: res = $signed(a) >>> $signed(b);
+    4'd10: res = $signed(a) >>> b;
     default: res = 32'dx;
   endcase
 

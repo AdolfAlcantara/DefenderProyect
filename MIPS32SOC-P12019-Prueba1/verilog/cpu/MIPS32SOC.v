@@ -58,7 +58,7 @@ module MIPS32SOC (
 
     wire [3:0] encMW;            //each bit refers to the byte to be write
 
-    wire [31:0] memReadInData;  //cable de salida del MUX para decidir la entrada del MemReadDataDecoder
+    reg [31:0] memReadInData;  //cable de salida del MUX para decidir la entrada del MemReadDataDecoder
 
     //cuarta entrega
     wire branchTaken;
@@ -88,7 +88,7 @@ module MIPS32SOC (
 
     // assign rfWriteAddr = rfWriteAddrSel? rd : rt; // MUX
     // assign aluOperand2 = aluSrc? imm32 : rfData2; // MUX
-    assign rfWriteData = rfWriteDataSel[0]? memReadOutData : aluResult; // MUX
+    // assign rfWriteData = rfWriteDataSel[0]? memReadOutData : aluResult; // MUX
 
     //cuarta entrega 
     //bitshifting muxes
